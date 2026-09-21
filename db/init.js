@@ -23,6 +23,7 @@ const SCHEMA_STATEMENTS = [
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     price INTEGER NOT NULL,
+    photo_url TEXT,
     active INTEGER NOT NULL DEFAULT 1,
     sort_order INTEGER NOT NULL DEFAULT 0
   )`,
@@ -50,6 +51,13 @@ const SCHEMA_STATEMENTS = [
 async function initSchema() {
   for (const stmt of SCHEMA_STATEMENTS) {
     await client.execute(stmt);
+  }
+  
+  // 既存のdrinksテーブルに photo_url 列が無ければ追加する（後から追加した列のため。既にあればエラーになるので無視する）
+  try {
+    await client.execute('ALTER TABLE drinks ADD COLUMN photo_url TEXT');
+  } catch (e) {
+    // already exists - ignore
   }
 
   const settingDefaults = {
