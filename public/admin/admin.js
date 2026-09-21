@@ -44,6 +44,15 @@ errEl.style.display = '';
 }
 });
 
+[el('loginUser'), el('loginPass')].forEach((input) => {
+input.addEventListener('keydown', (e) => {
+if (e.key === 'Enter') {
+e.preventDefault();
+el('loginBtn').click();
+}
+});
+});
+
 el('logoutBtn').addEventListener('click', async () => {
 await api('/logout', { method: 'POST' });
 checkAuth();
