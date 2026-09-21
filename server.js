@@ -17,7 +17,9 @@ async function main() {
 
   const app = express();
   app.set('trust proxy', 1);
-  app.use(express.json());
+  app.use(express.json({
+    verify: (req, res, buf) => { req.rawBody = buf; }, // LINE Webhookの署名検証に生のbodyが必要
+  }));
 
   app.use(session({
     // 管理者1名の小規模利用のため、セッションはメモリ保持（サーバー再起動でログアウトされる程度の影響）
@@ -33,6 +35,7 @@ async function main() {
 
   app.use('/api', require('./routes/public'));
   app.use('/api/admin', require('./routes/admin'));
+  app.use('/api/line', require('./routes/line'));
 
   app.use(express.static(path.join(__dirname, 'public')));
 
