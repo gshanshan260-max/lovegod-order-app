@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>遠隔ドリンク注文 | LoveGod</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="container">
+  <header class="shop-header">
+    <h1 id="shopName">LoveGod</h1>
+    <p>遠隔ドリンクで推しを応援しよう</p>
+  </header>
+
+  <div class="step-indicator">
+    <div class="step-dot" data-step="1"></div>
+    <div class="step-dot" data-step="2"></div>
+    <div class="step-dot" data-step="3"></div>
+    <div class="step-dot" data-step="4"></div>
+  </div>
+
+  <!-- Step 1: cast select -->
+  <div class="card step" id="step-1">
+    <p class="section-title">① キャストを選ぶ</p>
+    <div class="option-grid" id="castGrid"></div>
+  </div>
+
+  <!-- Step 2: drink select -->
+  <div class="card step" id="step-2" style="display:none">
+    <p class="section-title">② ドリンクを選ぶ</p>
+    <div class="option-grid" id="drinkGrid"></div>
+    <button class="secondary" id="backTo1">戻る</button>
+  </div>
+
+  <!-- Step 3: details -->
+  <div class="card step" id="step-3" style="display:none">
+    <p class="section-title">③ お客様情報</p>
+    <label for="customerName">お名前 / SNSのお名前</label>
+    <input type="text" id="customerName" maxlength="100" placeholder="例：はなこ">
+    <label for="message">応援メッセージ（任意）</label>
+    <textarea id="message" maxlength="500" placeholder="キャストへのメッセージがあれば"></textarea>
+
+    <label>決済方法</label>
+    <div class="pay-choice">
+      <label id="payPaypayLabel"><input type="radio" name="pay" value="paypay">PayPay</label>
+      <label id="payBankLabel"><input type="radio" name="pay" value="bank">銀行振込</label>
+    </div>
+    <p class="error-text" id="step3Error" style="display:none"></p>
+    <button class="primary" id="toStep4">確認画面へ</button>
+    <button class="secondary" id="backTo2">戻る</button>
+  </div>
+
+  <!-- Step 4: confirm + submit -->
+  <div class="card step" id="step-4" style="display:none">
+    <p class="section-title">④ 内容確認</p>
+    <div class="summary-row"><span class="label">キャスト</span><span id="sumCast"></span></div>
+    <div class="summary-row"><span class="label">ドリンク</span><span id="sumDrink"></span></div>
+    <div class="summary-row"><span class="label">金額</span><span id="sumPrice"></span></div>
+    <div class="summary-row"><span class="label">お名前</span><span id="sumName"></span></div>
+    <div class="summary-row"><span class="label">決済方法</span><span id="sumPay"></span></div>
+    <p class="error-text" id="step4Error" style="display:none"></p>
+    <button class="primary" id="submitOrder">この内容で注文する</button>
+    <button class="secondary" id="backTo3">戻る</button>
+  </div>
+
+  <!-- Step 5: done -->
+  <div class="card step" id="step-5" style="display:none">
+    <p class="section-title">✨ ご注文ありがとうございます</p>
+    <p>注文番号：<strong id="doneOrderId"></strong></p>
+    <p>以下の情報をもとにお支払いをお願いします。お支払い確認後、キャストに届きます。</p>
+    <div class="payment-box" id="paymentBox"></div>
+    <button class="secondary" id="restart">もう一度注文する</button>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
