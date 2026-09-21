@@ -242,6 +242,7 @@ button.secondary {
   cursor: pointer;
 }
 .mini-btn.danger { border-color: var(--danger); color: var(--danger); }
+.mini-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .list-item {
   display: flex;
