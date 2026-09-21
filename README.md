@@ -7,15 +7,16 @@
 ## 構成
 
 - Node.js + Express（サーバー）
-- SQLite（データベース。Node.js標準機能の`node:sqlite`を使用。追加のビルドツールやPythonのインストールは不要、ファイル1つで完結）
+- データベースは [Turso](https://turso.tech)（無料のクラウドSQLite）を使用。
+  Render.comなどの「無料プランには永続ディスクが無い」ホスティングでも、
+  データが消えずに残ります。TURSO_DATABASE_URL を設定しなければローカルファイル
+  （data.sqlite）で動くので、自分のPCでの確認時はTursoの用意は不要です。
 - フロントエンドはプレーンなHTML/CSS/JS（フレームワーク不要）
-
-**必要なNode.jsのバージョン: 22.5以上**（[nodejs.org](https://nodejs.org)のLTS版なら基本的に条件を満たします）
 
 ```
 lovegod-order-app/
 ├── server.js          # エントリーポイント
-├── db/init.js         # DB初期化・テーブル定義
+├── db/init.js         # DB接続・テーブル定義（Turso / ローカルファイル両対応）
 ├── routes/
 │   ├── public.js       # お客様向けAPI（キャスト・ドリンク一覧、注文送信）
 │   └── admin.js        # 管理画面向けAPI（ログイン必須）
@@ -40,13 +41,17 @@ npm start
 - お客様向け注文ページ： http://localhost:3000/
 - 管理画面： http://localhost:3000/admin
 
+ローカル確認時は `TURSO_DATABASE_URL` を空のままでOKです（自動でdata.sqliteという
+ファイルが作られます）。
+
 ## .env の設定項目
 
 | 変数 | 説明 |
 |---|---|
+| `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | 無料のクラウドDB「Turso」の接続情報（下記「本番公開の手順」参照）。空のままならローカルファイルを使用 |
 | `ADMIN_USERNAME` | 管理画面の初回ログインID（初回起動時にこの内容でアカウントが自動作成されます） |
 | `ADMIN_PASSWORD` | 管理画面の初回パスワード（ログイン後、管理画面の「アカウント」タブからいつでも変更可能） |
-| `SESSION_SECRET` | セッション暗号化用の文字列。適当な長い英数字にしてください（例: `openssl rand -hex 32` で生成） |
+| `SESSION_SECRET` | セッション暗号化用の文字列。適当な長い英数字にしてください |
 | `PORT` | サーバーのポート番号。多くのホスティングサービスでは自動で上書きされるので気にしなくてOK |
 
 **注意**: `ADMIN_USERNAME`/`ADMIN_PASSWORD` は「アカウントが存在しないときだけ」使われる初期値です。
@@ -58,32 +63,37 @@ npm start
 実際のキャスト名・ドリンクメニューは管理画面の「キャスト」「ドリンク」タブから追加・編集・非表示にできます。
 PayPay IDや振込先口座は「決済設定」タブから設定してください（初期値はダミーです。必ず変更してください）。
 
-## ホスティング方法（自分で設定する場合のおすすめ）
+## 本番公開の手順（無料構成: Render.com + Turso）
 
-このアプリは「Node.jsが動く場所」ならどこでも動きます。SQLiteはファイルベースなので、
-**永続ディスク（ファイルが消えないストレージ）が使えるサービス**を選ぶのがポイントです。
+### 1. Tursoでデータベースを作る（無料）
 
-### おすすめ: Render.com（無料枠あり・日本語情報も多い）
+1. https://turso.tech にアクセスしてアカウント作成（GitHubアカウントでログインできます）
+2. ダッシュボードで「Create Database」→ 好きな名前を付けて作成
+3. 作成したデータベースの画面で接続情報を確認：
+   - **Database URL**（`libsql://...` から始まる文字列）
+   - **Auth Token**（「Create Token」のようなボタンを押して発行）
+4. この2つを、Renderの環境変数に設定します（次の手順）
 
-1. このフォルダをGitHubリポジトリにアップロードする
-2. Render.com で「New Web Service」→ 対象リポジトリを選択
+### 2. Render.comにデプロイする
+
+1. このフォルダをGitHubリポジトリにアップロードする（`.env`ファイルは絶対に含めない）
+2. Render.com で「New +」→「Web Service」→ 対象リポジトリを選択
 3. Build Command: `npm install`
 4. Start Command: `npm start`
-5. Environment タブで `.env.example` の内容を1つずつ環境変数として登録
-6. 「Disks」でこのサービス用に永続ディスクを1つ追加し、マウントパスをこのプロジェクトの
-   ルート（アプリの実行ディレクトリ）に設定 → これで `data.sqlite` が再起動やデプロイのたびに
-   消えずに残ります（**これを忘れるとデータが消えるので要注意**）
-7. デプロイ後に発行されるURLがそのままお客様に共有する注文ページのURLになります
+5. Instance Type: **Free**のままでOK（永続ディスクが不要になったため）
+6. Environment Variables に以下を登録：
+   - `TURSO_DATABASE_URL` = さきほど確認したDatabase URL
+   - `TURSO_AUTH_TOKEN` = さきほど発行したAuth Token
+   - `ADMIN_USERNAME` = 自分の好きなID
+   - `ADMIN_PASSWORD` = 自分の好きなパスワード
+   - `SESSION_SECRET` = 適当な長い文字列
+7. 「Create Web Service」を押すとデプロイが始まります。2〜5分ほどで
+   `https://（名前）.onrender.com` というURLが発行されます。これが公開URLです。
 
-### 他の選択肢
-
-- **Railway** … Renderとほぼ同じ流れ。ボリューム（永続ストレージ）を必ず追加してください
-- **さくらのVPS / ConoHa VPSなど** … Node.jsを直接インストールして`pm2`等で常駐させる。
-  自由度は一番高いですが、サーバー管理の知識がある程度必要です
-
-いずれの場合も **HTTPS化（httpsでアクセスできるようにする）** を必ず行ってください
-（Render/Railwayは標準でHTTPS化されます）。HTTPSでないと管理画面のログインが
-セキュリティ上安全でなく、ログインセッションも不安定になります。
+**Render無料プランの制限**: 15分アクセスが無いとサーバーが一旦休止し、次のアクセス時に
+再起動（1分ほど）が入ります。注文データ自体はTurso側に保存されているので消えませんが、
+「開いた瞬間だけ少し待たされる」ことがある点はご了承ください。気になる場合は月7ドルの
+Starterプランにアップグレードすると常時起動になります。
 
 ## 今後の拡張候補（今回のバージョンには含まれていません）
 

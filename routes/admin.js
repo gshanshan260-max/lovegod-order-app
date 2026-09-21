@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { db } = require('../db/init');
+const { client } = require('../db/init');
 
 function requireAuth(req, res, next) {
   if (req.session && req.session.adminId) return next();
@@ -9,9 +9,10 @@ function requireAuth(req, res, next) {
 }
 
 // POST /api/admin/login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  const user = db.prepare('SELECT * FROM admin_users WHERE username = ?').get(username);
+  const result = await client.execute({ sql: 'SELECT * FROM admin_users WHERE username = ?', args: [username] });
+  const user = result.rows[0];
   if (!user || !bcrypt.compareSync(password || '', user.password_hash)) {
     return res.status(401).json({ error: 'ユーザー名またはパスワードが違います。' });
   }
@@ -37,123 +38,133 @@ router.get('/me', (req, res) => {
 router.use(requireAuth);
 
 // GET /api/admin/orders?status=pending
-router.get('/orders', (req, res) => {
+router.get('/orders', async (req, res) => {
   const { status } = req.query;
-  let rows;
+  const baseSql = `
+    SELECT o.*, c.name AS cast_name, d.name AS drink_name, d.price AS price
+    FROM orders o
+    JOIN casts c ON c.id = o.cast_id
+    JOIN drinks d ON d.id = o.drink_id
+  `;
+  let result;
   if (status && status !== 'all') {
-    rows = db.prepare(`
-      SELECT o.*, c.name AS cast_name, d.name AS drink_name, d.price AS price
-      FROM orders o
-      JOIN casts c ON c.id = o.cast_id
-      JOIN drinks d ON d.id = o.drink_id
-      WHERE o.status = ?
-      ORDER BY o.created_at DESC
-    `).all(status);
+    result = await client.execute({ sql: baseSql + ' WHERE o.status = ? ORDER BY o.created_at DESC', args: [status] });
   } else {
-    rows = db.prepare(`
-      SELECT o.*, c.name AS cast_name, d.name AS drink_name, d.price AS price
-      FROM orders o
-      JOIN casts c ON c.id = o.cast_id
-      JOIN drinks d ON d.id = o.drink_id
-      ORDER BY o.created_at DESC
-    `).all();
+    result = await client.execute(baseSql + ' ORDER BY o.created_at DESC');
   }
-  res.json(rows);
+  res.json(result.rows);
 });
 
 // PATCH /api/admin/orders/:id  { status }
-router.patch('/orders/:id', (req, res) => {
+router.patch('/orders/:id', async (req, res) => {
   const { status } = req.body;
   const allowed = ['pending', 'paid', 'delivered', 'cancelled'];
   if (!allowed.includes(status)) return res.status(400).json({ error: '不正なステータスです。' });
-  const result = db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: '注文が見つかりません。' });
+  const result = await client.execute({ sql: 'UPDATE orders SET status = ? WHERE id = ?', args: [status, req.params.id] });
+  if (Number(result.rowsAffected) === 0) return res.status(404).json({ error: '注文が見つかりません。' });
   res.json({ ok: true });
 });
 
 // DELETE /api/admin/orders/:id
-router.delete('/orders/:id', (req, res) => {
-  db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
+router.delete('/orders/:id', async (req, res) => {
+  await client.execute({ sql: 'DELETE FROM orders WHERE id = ?', args: [req.params.id] });
   res.json({ ok: true });
 });
 
 // ---- casts CRUD ----
-router.get('/casts', (req, res) => {
-  res.json(db.prepare('SELECT * FROM casts ORDER BY sort_order ASC, id ASC').all());
+router.get('/casts', async (req, res) => {
+  const result = await client.execute('SELECT * FROM casts ORDER BY sort_order ASC, id ASC');
+  res.json(result.rows);
 });
-router.post('/casts', (req, res) => {
+router.post('/casts', async (req, res) => {
   const { name, photo_url, sort_order } = req.body;
   if (!name) return res.status(400).json({ error: '名前は必須です。' });
-  const info = db.prepare('INSERT INTO casts (name, photo_url, sort_order) VALUES (?, ?, ?)')
-    .run(name, photo_url || '', sort_order || 0);
-  res.json({ id: info.lastInsertRowid });
+  const result = await client.execute({
+    sql: 'INSERT INTO casts (name, photo_url, sort_order) VALUES (?, ?, ?)',
+    args: [name, photo_url || '', sort_order || 0],
+  });
+  res.json({ id: Number(result.lastInsertRowid) });
 });
-router.patch('/casts/:id', (req, res) => {
+router.patch('/casts/:id', async (req, res) => {
   const { name, photo_url, active, sort_order } = req.body;
-  const existing = db.prepare('SELECT * FROM casts WHERE id = ?').get(req.params.id);
+  const existingResult = await client.execute({ sql: 'SELECT * FROM casts WHERE id = ?', args: [req.params.id] });
+  const existing = existingResult.rows[0];
   if (!existing) return res.status(404).json({ error: '見つかりません。' });
-  db.prepare('UPDATE casts SET name=?, photo_url=?, active=?, sort_order=? WHERE id=?').run(
-    name ?? existing.name,
-    photo_url ?? existing.photo_url,
-    active !== undefined ? (active ? 1 : 0) : existing.active,
-    sort_order ?? existing.sort_order,
-    req.params.id
-  );
+  await client.execute({
+    sql: 'UPDATE casts SET name=?, photo_url=?, active=?, sort_order=? WHERE id=?',
+    args: [
+      name ?? existing.name,
+      photo_url ?? existing.photo_url,
+      active !== undefined ? (active ? 1 : 0) : existing.active,
+      sort_order ?? existing.sort_order,
+      req.params.id,
+    ],
+  });
   res.json({ ok: true });
 });
-router.delete('/casts/:id', (req, res) => {
-  db.prepare('DELETE FROM casts WHERE id = ?').run(req.params.id);
+router.delete('/casts/:id', async (req, res) => {
+  await client.execute({ sql: 'DELETE FROM casts WHERE id = ?', args: [req.params.id] });
   res.json({ ok: true });
 });
 
 // ---- drinks CRUD ----
-router.get('/drinks', (req, res) => {
-  res.json(db.prepare('SELECT * FROM drinks ORDER BY sort_order ASC, id ASC').all());
+router.get('/drinks', async (req, res) => {
+  const result = await client.execute('SELECT * FROM drinks ORDER BY sort_order ASC, id ASC');
+  res.json(result.rows);
 });
-router.post('/drinks', (req, res) => {
+router.post('/drinks', async (req, res) => {
   const { name, price, sort_order } = req.body;
   if (!name || price === undefined) return res.status(400).json({ error: '名前と価格は必須です。' });
-  const info = db.prepare('INSERT INTO drinks (name, price, sort_order) VALUES (?, ?, ?)')
-    .run(name, price, sort_order || 0);
-  res.json({ id: info.lastInsertRowid });
+  const result = await client.execute({
+    sql: 'INSERT INTO drinks (name, price, sort_order) VALUES (?, ?, ?)',
+    args: [name, price, sort_order || 0],
+  });
+  res.json({ id: Number(result.lastInsertRowid) });
 });
-router.patch('/drinks/:id', (req, res) => {
+router.patch('/drinks/:id', async (req, res) => {
   const { name, price, active, sort_order } = req.body;
-  const existing = db.prepare('SELECT * FROM drinks WHERE id = ?').get(req.params.id);
+  const existingResult = await client.execute({ sql: 'SELECT * FROM drinks WHERE id = ?', args: [req.params.id] });
+  const existing = existingResult.rows[0];
   if (!existing) return res.status(404).json({ error: '見つかりません。' });
-  db.prepare('UPDATE drinks SET name=?, price=?, active=?, sort_order=? WHERE id=?').run(
-    name ?? existing.name,
-    price ?? existing.price,
-    active !== undefined ? (active ? 1 : 0) : existing.active,
-    sort_order ?? existing.sort_order,
-    req.params.id
-  );
+  await client.execute({
+    sql: 'UPDATE drinks SET name=?, price=?, active=?, sort_order=? WHERE id=?',
+    args: [
+      name ?? existing.name,
+      price ?? existing.price,
+      active !== undefined ? (active ? 1 : 0) : existing.active,
+      sort_order ?? existing.sort_order,
+      req.params.id,
+    ],
+  });
   res.json({ ok: true });
 });
-router.delete('/drinks/:id', (req, res) => {
-  db.prepare('DELETE FROM drinks WHERE id = ?').run(req.params.id);
+router.delete('/drinks/:id', async (req, res) => {
+  await client.execute({ sql: 'DELETE FROM drinks WHERE id = ?', args: [req.params.id] });
   res.json({ ok: true });
 });
 
 // ---- settings ----
-router.get('/settings', (req, res) => {
-  const rows = db.prepare('SELECT key, value FROM settings').all();
+router.get('/settings', async (req, res) => {
+  const result = await client.execute('SELECT key, value FROM settings');
   const settings = {};
-  for (const r of rows) settings[r.key] = r.value;
+  for (const r of result.rows) settings[r.key] = r.value;
   res.json(settings);
 });
-router.put('/settings', (req, res) => {
-  const upsert = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
+router.put('/settings', async (req, res) => {
   for (const [k, v] of Object.entries(req.body || {})) {
-    upsert.run(k, String(v));
+    await client.execute({
+      sql: 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+      args: [k, String(v)],
+    });
   }
   res.json({ ok: true });
 });
 
 // ---- change own password ----
-router.post('/change-password', (req, res) => {
+router.post('/change-password', async (req, res) => {
   const { current_password, new_password } = req.body;
-  const user = db.prepare('SELECT * FROM admin_users WHERE id = ?').get(req.session.adminId);
+  const result = await client.execute({ sql: 'SELECT * FROM admin_users WHERE id = ?', args: [req.session.adminId] });
+  const user = result.rows[0];
   if (!user || !bcrypt.compareSync(current_password || '', user.password_hash)) {
     return res.status(401).json({ error: '現在のパスワードが違います。' });
   }
@@ -161,7 +172,7 @@ router.post('/change-password', (req, res) => {
     return res.status(400).json({ error: '新しいパスワードは6文字以上にしてください。' });
   }
   const hash = bcrypt.hashSync(new_password, 10);
-  db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').run(hash, user.id);
+  await client.execute({ sql: 'UPDATE admin_users SET password_hash = ? WHERE id = ?', args: [hash, user.id] });
   res.json({ ok: true });
 });
 
