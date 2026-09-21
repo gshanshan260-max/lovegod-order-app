@@ -1,0 +1,21 @@
+{
+  "name": "lovegod-order-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.0",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0"
+  }
+}

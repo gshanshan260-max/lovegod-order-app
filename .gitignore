@@ -1,0 +1,7 @@
+node_modules/
+data.sqlite
+data.sqlite-journal
+sessions.sqlite
+sessions.sqlite-journal
+.env
+*.log
