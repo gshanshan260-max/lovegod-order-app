@@ -35,8 +35,6 @@ async function main() {
 
   app.use('/api', require('./routes/public'));
   app.use('/api/admin', require('./routes/admin'));
-  app.use('/api/line', require('./routes/line'));
-
   app.use(express.static(path.join(__dirname, 'public')));
 
   // SPA-ish fallback for admin routes (login/dashboard are separate static files, this is just safety)
