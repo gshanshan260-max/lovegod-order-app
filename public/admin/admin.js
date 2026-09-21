@@ -172,8 +172,8 @@ async function swapOrder(items, indexA, indexB, kind, reload) {
 if (indexB < 0 || indexB >= items.length) return;
 const a = items[indexA];
 const b = items[indexB];
-await api(`/${kind}/${a.id}`, { method: 'PATCH', body: JSON.stringify({ sort_order: b.sort_order }) });
-await api(`/${kind}/${b.id}`, { method: 'PATCH', body: JSON.stringify({ sort_order: a.sort_order }) });
+await api(`/${kind}/${a.id}`, { method: 'PATCH', body: JSON.stringify({ sort_order: indexB }) });
+await api(`/${kind}/${b.id}`, { method: 'PATCH', body: JSON.stringify({ sort_order: indexA }) });
 reload();
 }
 
