@@ -51,6 +51,22 @@ header.shop-header p {
   font-size: 0.85rem;
   margin-top: 4px;
 }
+.shop-logo {
+  height: 28px;
+  width: auto;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.shop-logo-small {
+  height: 20px;
+  width: auto;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.shop-logo-large {
+  height: 48px;
+  width: auto;
+}
 
 .step-indicator {
   display: flex;
