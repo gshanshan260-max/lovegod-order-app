@@ -21,7 +21,12 @@
     state.casts = casts;
     state.drinks = drinks;
     state.settings = settings;
-    if (settings.shop_name) el('shopName').textContent = settings.shop_name;
+    // ヘッダーはロゴ画像表示に固定。shop_name はページタイトル/alt表示にのみ反映する。
+    if (settings.shop_name) {
+      const logoImg = el('shopName').querySelector('img');
+      if (logoImg) logoImg.alt = settings.shop_name;
+      else el('shopName').textContent = settings.shop_name;
+    }
     renderCasts();
     renderDrinks();
   }
