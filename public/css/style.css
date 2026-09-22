@@ -53,21 +53,22 @@ header.shop-header p {
 }
 .shop-logo {
   display: block;
-  height: 140px;
+  width: 420px;
   max-width: 100%;
-  width: auto;
+  height: auto;
   margin: 8px auto 0;
 }
 .shop-logo-small {
   display: block;
-  height: 100px;
+  width: 300px;
   max-width: 100%;
-  width: auto;
+  height: auto;
+  margin: 0 auto;
 }
 .shop-logo-large {
-  height: 240px;
+  width: 720px;
   max-width: 100%;
-  width: auto;
+  height: auto;
 }
 
 .step-indicator {
