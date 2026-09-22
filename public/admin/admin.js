@@ -3,6 +3,7 @@ const el = (id) => document.getElementById(id);
 let currentOrderStatus = 'all';
 
 const statusLabel = { pending: '未入金', paid: '入金済み', delivered: '対応済み', cancelled: 'キャンセル' };
+const DRINK_GENRES = ['キャスドリ', '缶もの', 'ショット', 'シャンパン', 'その他'];
 
 function escapeHtml(s) {
 return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -204,10 +205,15 @@ list.innerHTML = '';
 drinks.forEach((d, idx) => {
 const row = document.createElement('div');
 row.className = 'card';
+const genreOptions = DRINK_GENRES.map(g => `<option value="${g}" ${d.genre === g ? 'selected' : ''}>${g}</option>`).join('');
 row.innerHTML = `
 <div class="list-item">
 <span>${escapeHtml(d.name)}（¥${d.price.toLocaleString()}）${d.active ? '' : '（非表示）'}</span>
 <div class="order-actions">
+<select data-action="genre" class="mini-btn">
+<option value="" ${!d.genre ? 'selected' : ''}>ジャンル未設定</option>
+${genreOptions}
+</select>
 <button class="mini-btn" data-action="up" ${idx === 0 ? 'disabled' : ''}>↑</button>
 <button class="mini-btn" data-action="down" ${idx === drinks.length - 1 ? 'disabled' : ''}>↓</button>
 <button class="mini-btn" data-action="toggle">${d.active ? '非表示にする' : '表示する'}</button>
@@ -219,6 +225,10 @@ const upBtn = row.querySelector('[data-action=up]');
 const downBtn = row.querySelector('[data-action=down]');
 if (upBtn) upBtn.addEventListener('click', () => swapOrder(drinks, idx, idx - 1, 'drinks', loadDrinks));
 if (downBtn) downBtn.addEventListener('click', () => swapOrder(drinks, idx, idx + 1, 'drinks', loadDrinks));
+row.querySelector('[data-action=genre]').addEventListener('change', async (e) => {
+await api(`/drinks/${d.id}`, { method: 'PATCH', body: JSON.stringify({ genre: e.target.value }) });
+loadDrinks();
+});
 row.querySelector('[data-action=toggle]').addEventListener('click', async () => {
 await api(`/drinks/${d.id}`, { method: 'PATCH', body: JSON.stringify({ active: d.active ? 0 : 1 }) });
 loadDrinks();
@@ -235,8 +245,9 @@ list.appendChild(row);
 el('addDrinkBtn').addEventListener('click', async () => {
 const name = el('newDrinkName').value.trim();
 const price = parseInt(el('newDrinkPrice').value, 10);
+const genre = el('newDrinkGenre').value;
 if (!name || isNaN(price)) return;
-await api('/drinks', { method: 'POST', body: JSON.stringify({ name, price }) });
+await api('/drinks', { method: 'POST', body: JSON.stringify({ name, price, genre }) });
 el('newDrinkName').value = '';
 el('newDrinkPrice').value = '';
 loadDrinks();
