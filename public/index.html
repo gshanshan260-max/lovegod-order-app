@@ -18,6 +18,7 @@
     <div class="step-dot" data-step="2"></div>
     <div class="step-dot" data-step="3"></div>
     <div class="step-dot" data-step="4"></div>
+    <div class="step-dot" data-step="5"></div>
   </div>
 
   <!-- Step 1: cast select -->
@@ -26,16 +27,24 @@
     <div class="option-grid" id="castGrid"></div>
   </div>
 
-  <!-- Step 2: drink select -->
+  <!-- Step 2: genre select -->
   <div class="card step" id="step-2" style="display:none">
-    <p class="section-title">② ドリンクを選ぶ</p>
-    <div class="option-grid" id="drinkGrid"></div>
+    <p class="section-title">② ジャンルを選ぶ</p>
+    <div class="option-grid" id="genreGrid"></div>
     <button class="secondary" id="backTo1">戻る</button>
   </div>
 
-  <!-- Step 3: details -->
+  <!-- Step 3: drink select -->
   <div class="card step" id="step-3" style="display:none">
-    <p class="section-title">③ お客様情報</p>
+    <p class="section-title">③ ドリンクを選ぶ</p>
+    <p class="genre-current" id="genreCurrent"></p>
+    <div class="option-grid" id="drinkGrid"></div>
+    <button class="secondary" id="backTo2">戻る</button>
+  </div>
+
+  <!-- Step 4: details -->
+  <div class="card step" id="step-4" style="display:none">
+    <p class="section-title">④ お客様情報</p>
     <label for="customerName">お名前 / SNSのお名前</label>
     <input type="text" id="customerName" maxlength="100" placeholder="例：はなこ">
     <label for="message">応援メッセージ（任意）</label>
@@ -46,26 +55,26 @@
       <label id="payPaypayLabel"><input type="radio" name="pay" value="paypay">PayPay</label>
       <label id="payBankLabel"><input type="radio" name="pay" value="bank">銀行振込</label>
     </div>
-    <p class="error-text" id="step3Error" style="display:none"></p>
-    <button class="primary" id="toStep4">確認画面へ</button>
-    <button class="secondary" id="backTo2">戻る</button>
+    <p class="error-text" id="step4Error" style="display:none"></p>
+    <button class="primary" id="toStep5">確認画面へ</button>
+    <button class="secondary" id="backTo3">戻る</button>
   </div>
 
-  <!-- Step 4: confirm + submit -->
-  <div class="card step" id="step-4" style="display:none">
-    <p class="section-title">④ 内容確認</p>
+  <!-- Step 5: confirm + submit -->
+  <div class="card step" id="step-5" style="display:none">
+    <p class="section-title">⑤ 内容確認</p>
     <div class="summary-row"><span class="label">キャスト</span><span id="sumCast"></span></div>
     <div class="summary-row"><span class="label">ドリンク</span><span id="sumDrink"></span></div>
     <div class="summary-row"><span class="label">金額</span><span id="sumPrice"></span></div>
     <div class="summary-row"><span class="label">お名前</span><span id="sumName"></span></div>
     <div class="summary-row"><span class="label">決済方法</span><span id="sumPay"></span></div>
-    <p class="error-text" id="step4Error" style="display:none"></p>
+    <p class="error-text" id="step5Error" style="display:none"></p>
     <button class="primary" id="submitOrder">この内容で注文する</button>
-    <button class="secondary" id="backTo3">戻る</button>
+    <button class="secondary" id="backTo4">戻る</button>
   </div>
 
-  <!-- Step 5: done -->
-  <div class="card step" id="step-5" style="display:none">
+  <!-- Step 6: done -->
+  <div class="card step" id="step-6" style="display:none">
     <p class="section-title">✨ ご注文ありがとうございます</p>
     <p>注文番号：<strong id="doneOrderId"></strong></p>
     <p>以下の情報をもとにお支払いをお願いします。お支払い確認後、キャストに届きます。</p>
