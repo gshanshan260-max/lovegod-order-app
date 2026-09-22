@@ -60,6 +60,13 @@ async function initSchema() {
     // already exists - ignore
   }
 
+  // 既存のdrinksテーブルに genre 列（キャスドリ/缶もの/ショット/シャンパン/その他）が無ければ追加する
+  try {
+    await client.execute('ALTER TABLE drinks ADD COLUMN genre TEXT');
+  } catch (e) {
+    // already exists - ignore
+  }
+
   const settingDefaults = {
     paypay_id: 'あなたのPayPay ID',
     bank_info: '〇〇銀行 〇〇支店 普通 1234567 名義：ヤマダタロウ',
@@ -80,9 +87,13 @@ async function initSchema() {
 
   const drinkCount = (await client.execute('SELECT COUNT(*) AS c FROM drinks')).rows[0].c;
   if (Number(drinkCount) === 0) {
-    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order) VALUES (?, ?, ?)', args: ['シャンパン(ミニ)', 3000, 0] });
-    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order) VALUES (?, ?, ?)', args: ['カクテル', 1500, 1] });
-    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order) VALUES (?, ?, ?)', args: ['ソフトドリンク', 800, 2] });
+    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order, genre) VALUES (?, ?, ?, ?)', args: ['シャンパン(ミニ)', 3000, 0, 'シャンパン'] });
+    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order, genre) VALUES (?, ?, ?, ?)', args: ['カクテル', 1500, 1, 'キャスドリ'] });
+    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order, genre) VALUES (?, ?, ?, ?)', args: ['ソフトドリンク', 800, 2, 'キャスドリ'] });
+    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order, genre) VALUES (?, ?, ?, ?)', args: ['缶チューハイ', 800, 3, '缶もの'] });
+    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order, genre) VALUES (?, ?, ?, ?)', args: ['テキーラショット', 1000, 4, 'ショット'] });
+    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order, genre) VALUES (?, ?, ?, ?)', args: ['オムライス', 1200, 5, 'その他'] });
+    await client.execute({ sql: 'INSERT INTO drinks (name, price, sort_order, genre) VALUES (?, ?, ?, ?)', args: ['チェキ', 1000, 6, 'その他'] });
   }
 }
 
