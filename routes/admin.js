@@ -113,27 +113,28 @@ router.get('/drinks', async (req, res) => {
   res.json(result.rows);
 });
 router.post('/drinks', async (req, res) => {
-  const { name, price, photo_url, sort_order } = req.body;
+  const { name, price, photo_url, sort_order, genre } = req.body;
   if (!name || price === undefined) return res.status(400).json({ error: '名前と価格は必須です。' });
   const result = await client.execute({
-    sql: 'INSERT INTO drinks (name, price, photo_url, sort_order) VALUES (?, ?, ?, ?)',
-    args: [name, price, photo_url || '', sort_order || 0],
+    sql: 'INSERT INTO drinks (name, price, photo_url, sort_order, genre) VALUES (?, ?, ?, ?, ?)',
+    args: [name, price, photo_url || '', sort_order || 0, genre || ''],
   });
   res.json({ id: Number(result.lastInsertRowid) });
 });
 router.patch('/drinks/:id', async (req, res) => {
-  const { name, price, photo_url, active, sort_order } = req.body;
+  const { name, price, photo_url, active, sort_order, genre } = req.body;
   const existingResult = await client.execute({ sql: 'SELECT * FROM drinks WHERE id = ?', args: [req.params.id] });
   const existing = existingResult.rows[0];
   if (!existing) return res.status(404).json({ error: '見つかりません。' });
   await client.execute({
-    sql: 'UPDATE drinks SET name=?, price=?, photo_url=?, active=?, sort_order=? WHERE id=?',
+    sql: 'UPDATE drinks SET name=?, price=?, photo_url=?, active=?, sort_order=?, genre=? WHERE id=?',
     args: [
       name ?? existing.name,
       price ?? existing.price,
       photo_url ?? existing.photo_url,
       active !== undefined ? (active ? 1 : 0) : existing.active,
       sort_order ?? existing.sort_order,
+      genre ?? existing.genre,
       req.params.id,
     ],
   });

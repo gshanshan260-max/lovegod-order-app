@@ -10,7 +10,7 @@ router.get('/casts', async (req, res) => {
 
 // GET /api/drinks - active drinks for the order form
 router.get('/drinks', async (req, res) => {
-  const result = await client.execute('SELECT id, name, price, photo_url FROM drinks WHERE active = 1 ORDER BY sort_order ASC, id ASC');
+  const result = await client.execute('SELECT id, name, price, photo_url, genre FROM drinks WHERE active = 1 ORDER BY sort_order ASC, id ASC');
   res.json(result.rows);
 });
 
