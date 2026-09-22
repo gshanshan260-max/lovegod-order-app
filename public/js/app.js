@@ -1,14 +1,24 @@
 (function () {
-  const state = { casts: [], drinks: [], settings: {}, selectedCast: null, selectedDrink: null };
+  const state = { casts: [], drinks: [], settings: {}, selectedCast: null, selectedGenre: null, selectedDrink: null };
+
+  const GENRES = [
+    { name: 'キャスドリ', icon: '🥂' },
+    { name: '缶もの', icon: '🥫' },
+    { name: 'ショット', icon: '🥃' },
+    { name: 'シャンパン', icon: '🍾' },
+    { name: 'その他', icon: '✨' },
+  ];
+  const TOTAL_STEPS = 6; // 1キャスト 2ジャンル 3ドリンク 4お客様情報 5内容確認 6完了
 
   const el = (id) => document.getElementById(id);
 
   function showStep(n) {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
       el('step-' + i).style.display = i === n ? '' : 'none';
     }
-    document.querySelectorAll('.step-dot').forEach((d, idx) => {
-      d.classList.toggle('active', idx < n && n <= 4 ? idx <= n - 1 : idx <= 3);
+    const dots = document.querySelectorAll('.step-dot');
+    dots.forEach((d, idx) => {
+      d.classList.toggle('active', n <= dots.length ? idx <= n - 1 : true);
     });
   }
 
@@ -28,7 +38,7 @@
       else el('shopName').textContent = settings.shop_name;
     }
     renderCasts();
-    renderDrinks();
+    renderGenres();
   }
 
   function renderCasts() {
@@ -56,14 +66,37 @@
     });
   }
 
+  function renderGenres() {
+    const grid = el('genreGrid');
+    grid.innerHTML = '';
+    GENRES.forEach(g => {
+      const tile = document.createElement('div');
+      tile.className = 'option-tile';
+      tile.dataset.genre = g.name;
+      tile.innerHTML = `
+        <div class="name">${g.icon} ${escapeHtml(g.name)}</div>
+      `;
+      tile.addEventListener('click', () => {
+        state.selectedGenre = g.name;
+        document.querySelectorAll('#genreGrid .option-tile').forEach(t => t.classList.remove('selected'));
+        tile.classList.add('selected');
+        renderDrinks();
+        setTimeout(() => showStep(3), 150);
+      });
+      grid.appendChild(tile);
+    });
+  }
+
   function renderDrinks() {
     const grid = el('drinkGrid');
     grid.innerHTML = '';
-    if (state.drinks.length === 0) {
-      grid.innerHTML = '<p class="empty-state">現在注文可能なドリンクがありません</p>';
+    el('genreCurrent').textContent = state.selectedGenre ? `ジャンル：${state.selectedGenre}` : '';
+    const drinksInGenre = state.drinks.filter(d => d.genre === state.selectedGenre);
+    if (drinksInGenre.length === 0) {
+      grid.innerHTML = '<p class="empty-state">このジャンルは現在注文可能なメニューがありません</p>';
       return;
     }
-    state.drinks.forEach(d => {
+    drinksInGenre.forEach(d => {
       const tile = document.createElement('div');
       tile.className = 'option-tile';
       tile.dataset.id = d.id;
@@ -75,7 +108,7 @@
         state.selectedDrink = d;
         document.querySelectorAll('#drinkGrid .option-tile').forEach(t => t.classList.remove('selected'));
         tile.classList.add('selected');
-        setTimeout(() => showStep(3), 150);
+        setTimeout(() => showStep(4), 150);
       });
       grid.appendChild(tile);
     });
@@ -95,11 +128,12 @@
   el('backTo1').addEventListener('click', () => showStep(1));
   el('backTo2').addEventListener('click', () => showStep(2));
   el('backTo3').addEventListener('click', () => showStep(3));
+  el('backTo4').addEventListener('click', () => showStep(4));
 
-  el('toStep4').addEventListener('click', () => {
+  el('toStep5').addEventListener('click', () => {
     const name = el('customerName').value.trim();
     const pay = document.querySelector('input[name=pay]:checked');
-    const errEl = el('step3Error');
+    const errEl = el('step4Error');
     if (!name) { errEl.textContent = 'お名前を入力してください。'; errEl.style.display = ''; return; }
     if (!pay) { errEl.textContent = '決済方法を選択してください。'; errEl.style.display = ''; return; }
     errEl.style.display = 'none';
@@ -109,7 +143,7 @@
     el('sumPrice').textContent = '¥' + state.selectedDrink.price.toLocaleString();
     el('sumName').textContent = name;
     el('sumPay').textContent = pay.value === 'paypay' ? 'PayPay' : '銀行振込';
-    showStep(4);
+    showStep(5);
   });
 
   el('submitOrder').addEventListener('click', async () => {
@@ -118,7 +152,7 @@
     const name = el('customerName').value.trim();
     const message = el('message').value.trim();
     const pay = document.querySelector('input[name=pay]:checked').value;
-    const errEl = el('step4Error');
+    const errEl = el('step5Error');
     errEl.style.display = 'none';
 
     try {
@@ -143,7 +177,7 @@
       } else {
         box.textContent = `${state.settings.bank_info}\n金額: ¥${data.price.toLocaleString()}\n\n振込人名義に注文番号(#${data.order_id})を入れていただけるとスムーズです。`;
       }
-      showStep(5);
+      showStep(6);
     } catch (e) {
       errEl.textContent = e.message;
       errEl.style.display = '';
@@ -154,6 +188,7 @@
 
   el('restart').addEventListener('click', () => {
     state.selectedCast = null;
+    state.selectedGenre = null;
     state.selectedDrink = null;
     el('customerName').value = '';
     el('message').value = '';
